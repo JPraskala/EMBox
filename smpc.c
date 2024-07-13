@@ -25,6 +25,76 @@ void SMPC_Init(void) {
 
     // the SMPC is now initialized
     smpc_initialized = 1;
-    printf("SMPC initialized.\n");
+    printf("SMPC is initialized.\n");
 }
 
+void SMPC_PowerOn(void) {
+    // enabling master SH-2 CPU
+    SMPC_ExecuteCommand(CMD_MSHON);
+    printf("SMPC is powered on.\n");
+}
+
+void SMPC_Reset(void) {
+    // reseting the system
+    SMPC_ExecuteCommand(CMD_SYSRES);
+    printf("SMPC reset completed.\n");
+}
+
+void SMPC_ChangeClockTo352(void) {
+    if (current_clock_mode) {
+        return;  // Already in 352 mode
+    }
+    SMPC_ExecuteCommand(CMD_CKCHG352);
+    current_clock_mode = 1;
+    printf("Clock change to 352 mode.\n");
+}
+
+void SMPC_ChangeClockTo320(void) {
+    if (!current_clock_mode) {
+        return;  // Already in 320 mode
+    }
+    SMPC_ExecuteCommand(CMD_CKCHG320);
+    current_clock_mode = 0;
+    printf("Clock changed to 320 mode.\n");
+}
+
+/*
+ * Takes a command (such as CMD_MSHON, CMD_SSHON) as a parameter
+ * Writes the command to the COMREG (command reg)
+ * Writing to the COMREG triggers the SMPC to start executing the command
+ *
+ * The timeout is needed to prevent infinite waiting (if it reaches zero from 1000 -- call the exception)
+ * If the timeout = 0 before the SF is cleared to 0 then the command did not complete in time
+ */
+bool SMPC_ExecuteCommand(uint32_t command) {
+    COMREG = command;
+
+    uint32_t timeout = SMPC_TIMEOUT_VALUE;
+    while (SF && timeout > 0) {
+        timeout--;
+    }
+
+    if (timeout == 0) {
+        SMPC_HandleError(SMPC_ERROR_TIMEOUT);
+        return false;
+    }
+
+    printf("SMPC command 0x%02X executed successfully.\n", (uint8_t)command);
+    return true;
+}
+
+void SMPC_HandleError(uint32_t error_code) {
+    switch(error_code) {
+        case SMPC_ERROR_TIMEOUT:
+            printf("SMPC Error: Command timeout\n");
+        break;
+        case SMPC_ERROR_INVALID_COMMAND:
+            printf("SMPC Error: Invalid command\n");
+        break;
+        case SMPC_ERROR_HARDWARE_FAILURE:
+            printf("SMPC Error: Hardware failure\n");
+        break;
+        default:
+            printf("SMPC Error: Unknown error code %u\n", error_code);
+    }
+}

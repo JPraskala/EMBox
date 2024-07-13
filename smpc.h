@@ -187,7 +187,7 @@ void SMPC_ChangeClockTo320(void);
  * 1. It will write commands to the COMREG
  * 2. It will wait for a status of completion (by checking the SF flag)
  */
-void SMPC_ExecuteCommand(uint32_t command);
+bool SMPC_ExecuteCommand(uint32_t command);
 
 // Handles errors
 void SMPC_HandleError(uint32_t error_code);
