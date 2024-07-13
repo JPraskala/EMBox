@@ -10,7 +10,7 @@
 // MEMORY MAP
 
 // input registers
-#define IREG0 *(volatile uint32_t*)0x20100001 // TODO cast to a 32bit uint
+#define IREG0 *(volatile uint32_t*)0x20100001
 #define IREG1 *(volatile uint32_t*)0x20100003
 #define IREG2 *(volatile uint32_t*)0x20100005
 #define IREG3 *(volatile uint32_t*)0x20100007
@@ -77,7 +77,60 @@
 
 // COMMANDS
 
-#define CMD_MSHON  0x00
+// SMPC Command Macros
 
+// Reset and enable SH-2 Master CPU
+#define CMD_MSHON      0x00000000
+
+// Reset and enable SH-2 Slave CPU
+#define CMD_SSHON      0x00000002
+
+// Disable SH-2 Slave CPU
+#define CMD_SSHOFF     0x00000003
+
+// Reset and enable Motorola 68000 (sound) CPU
+#define CMD_SNDON      0x00000006
+
+// Disable Motorola 68000 (sound) CPU
+#define CMD_SNDOFF     0x00000007
+
+// Reset and enable CD Block
+#define CMD_CDON       0x00000008
+
+// Disable CD Block
+#define CMD_CDOFF      0x00000009
+
+// Reset and enable Netlink execution
+#define CMD_NETLINKON  0x0000000A
+
+// Disable Netlink execution
+#define CMD_NETLINKOFF 0x0000000B
+
+// Reset the System
+#define CMD_SYSRES     0x0000000D
+
+// Change system clockspeed (352)
+#define CMD_CKCHG352   0x0000000E
+
+// Change system clockspeed (320)
+#define CMD_CKCHG320   0x0000000F
+
+// Fetch SMPC status and peripheral data
+#define CMD_INTBACK    0x00000010
+
+// Set date and time for the RTC
+#define CMD_SETTIME    0x00000016
+
+// Set 4-byte battery-backed memory
+#define CMD_SETSMEM    0x00000017
+
+// Send NMI request to Master SH2
+#define CMD_NMIREQ     0x00000018
+
+// Enable NMI requests on Reset button press
+#define CMD_RESENAB    0x00000019
+
+// Disable NMI requests on Reset button press
+#define CMD_RESDISA    0x0000001A
 
 #endif //SMPC_H
