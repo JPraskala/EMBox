@@ -11,21 +11,39 @@ static uint8_t smpc_initialized = 0; // 1=initialized 0=not initialized
 static uint8_t current_clock_mode = 0; // 1=352(NTSC) mode 0=320(PAL) mode
 
 // initialize SMPC
-void SMPC_Init(void) {
+bool SMPC_Init(void) {
     if (smpc_initialized) {
-        return; // avoiding re-initialization
+        printf("SMPC already initialized.\n");
+        return false; // avoiding re-initialization
     }
-
 
     // IOSEL set to manual mode for complete control over i/o (automatic would make too many assumptions)
     IOSEL = 0x00;
+    if (IOSEL != 0x00) {
+        printf("Failed to set IOSEL.\n");
+        return false;
+    }
 
     // Setting the DDR1 and DDR2 registers to 0x00 for Input Mode (since we may not know what is connected to the ports)
     // 0x00 configures all i/o ports as inputs -- which leads to peripheral detection
+    DDR1 = 0x00;
+    DDR2 = 0x00;
+    if (DDR1 != 0x00 || DDR2 != 0x00) {
+        printf("Failed to set DDR1 or DDR2 to input mode.\n");
+        return false;
+    }
+
+    // disabling the EXLE register
+    EXLE = 0x00;
+    if (EXLE != 0x00) {
+        printf("Failed to set EXLE.\n");
+        return false;
+    }
 
     // the SMPC is now initialized
     smpc_initialized = 1;
     printf("SMPC is initialized.\n");
+    return true;
 }
 
 void SMPC_PowerOn(void) {
@@ -98,3 +116,4 @@ void SMPC_HandleError(uint32_t error_code) {
             printf("SMPC Error: Unknown error code %u\n", error_code);
     }
 }
+

@@ -152,7 +152,7 @@
  * Configures interrupt handlers
  * The first operation
  */
-void SMPC_Init(void);
+bool SMPC_Init(void);
 
 // Execute the power-on
 /*
