@@ -117,3 +117,21 @@ void SMPC_HandleError(uint32_t error_code) {
     }
 }
 
+void SMPC_ScanPeripherals(void) {
+    // INTBACK setup
+    /*
+     * The INTBACK (interrupt back) is used primarily to get information about connceted peripherals.
+     * 1. It scans all ports
+     * 2. It collects data about each peripheral registered
+     */
+
+    // activates peripheral data collection and port status reader
+    IREG0 = 0x03;
+
+    // identifies the type of peripheral connected
+    IREG1 = 0x01;
+
+    // allows the SMPC to communicate with every possible connected peripheral
+    IREG2 = 0x3F;
+
+}
