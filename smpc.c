@@ -101,22 +101,6 @@ bool SMPC_ExecuteCommand(uint32_t command) {
     return true;
 }
 
-void SMPC_HandleError(uint32_t error_code) {
-    switch(error_code) {
-        case SMPC_ERROR_TIMEOUT:
-            printf("SMPC Error: Command timeout\n");
-        break;
-        case SMPC_ERROR_INVALID_COMMAND:
-            printf("SMPC Error: Invalid command\n");
-        break;
-        case SMPC_ERROR_HARDWARE_FAILURE:
-            printf("SMPC Error: Hardware failure\n");
-        break;
-        default:
-            printf("SMPC Error: Unknown error code %u\n", error_code);
-    }
-}
-
 void SMPC_ScanPeripherals(void) {
     // INTBACK setup
     /*
@@ -134,4 +118,50 @@ void SMPC_ScanPeripherals(void) {
     // allows the SMPC to communicate with every possible connected peripheral
     IREG2 = 0x3F;
 
+
+    // execution of INTBACK (Interrupt Sending Info Back to Main System)
+    // purpose: updates the OREG values with the most recent peripheral data
+    // execution: executed on call not automated
+    if (!SMPC_ExecuteCommand(CMD_INTBACK)) {
+        printf("INTBACK command failed.\n");
+        return;
+    }
+
+    ProcessINTBACKResults();
+
+    printf("Completed scan of peripherals.\n");
+}
+
+void ProcessINTBACKResults(void) {
+
+    // the general status register of all peripheral connections
+    uint8_t portStatus = OREG0;
+    printf("Overall port status: 0x%02X\n", portStatus);
+
+    for (int i = 0; i < 2; i++) {
+        uint8_t controllerType = (i == 0) ? (OREG1 & 0xFF) : (OREG3 & 0xFF);
+        uint8_t controllerData = (i == 0) ? (OREG2 & 0xFF) : (OREG4 & 0xFF);
+
+        printf("Port %d\n", i+1);
+
+        switch(controllerType) {
+
+        }
+    }
+}
+
+void SMPC_HandleError(uint32_t error_code) {
+    switch(error_code) {
+        case SMPC_ERROR_TIMEOUT:
+            printf("SMPC Error: Command timeout\n");
+        break;
+        case SMPC_ERROR_INVALID_COMMAND:
+            printf("SMPC Error: Invalid command\n");
+        break;
+        case SMPC_ERROR_HARDWARE_FAILURE:
+            printf("SMPC Error: Hardware failure\n");
+        break;
+        default:
+            printf("SMPC Error: Unknown error code %u\n", error_code);
+    }
 }

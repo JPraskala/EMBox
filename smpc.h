@@ -13,6 +13,10 @@
  * 32 bit casting due to Saturn's bus = 32 bits wide
  *
  * The registers themselves are 8 bits but are accessed via a 32-bit bus
+ * The 8 bit register data ends up as the least sig. byte in the 32 bit value
+ *
+ * Keeping the registers as 8 bits in a 32 bit map
+ *
  */
 
 // input registers
@@ -198,6 +202,8 @@ void SMPC_HandleError(uint32_t error_code);
  */
 void SMPC_ScanPeripherals(void);
 
+void ProcessINTBACKResults(void);
+
 // Retrieves the data for a specific peripheral port
 /*
  * Cannot exceed two ports ( 0>n<=2 where n is a whole number )
@@ -226,9 +232,13 @@ void SMPC_GetTime(uint8_t *year, uint8_t *month, uint8_t *day,
 
 // Exceptions
 
-#define SMPC_TIMEOUT_VALUE 1000
+#define SMPC_TIMEOUT_VALUE 1000 // ms
 #define SMPC_ERROR_TIMEOUT 0x01
 #define SMPC_ERROR_INVALID_COMMAND 0x02
 #define SMPC_ERROR_HARDWARE_FAILURE 0x04
+
+// peripherals
+
+#define CONTROLLER_LIM 2
 
 #endif //SMPC_H
