@@ -9,16 +9,6 @@
 
 // SMPC Memory Map (8 bit reg accessed as 32 bit)
 
-/*
- * 32 bit casting due to Saturn's bus = 32 bits wide
- *
- * The registers themselves are 8 bits but are accessed via a 32-bit bus
- * The 8 bit register data ends up as the least sig. byte in the 32 bit value
- *
- * Keeping the registers as 8 bits in a 32 bit map
- *
- */
-
 // input registers
 #define IREG0 *(volatile uint32_t*)0x20100001
 #define IREG1 *(volatile uint32_t*)0x20100003

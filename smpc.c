@@ -40,6 +40,13 @@ bool SMPC_Init(void) {
         return false;
     }
 
+    // clearing additional registers
+    SR = 0x00;
+    COMREG = 0x00;
+
+    // reseting clock mode
+    current_clock_mode = 0;
+
     // the SMPC is now initialized
     smpc_initialized = 1;
     printf("SMPC is initialized.\n");
@@ -99,55 +106,6 @@ bool SMPC_ExecuteCommand(uint32_t command) {
 
     printf("SMPC command 0x%02X executed successfully.\n", (uint8_t)command);
     return true;
-}
-
-void SMPC_ScanPeripherals(void) {
-    // INTBACK setup
-    /*
-     * The INTBACK (interrupt back) is used primarily to get information about connceted peripherals.
-     * 1. It scans all ports
-     * 2. It collects data about each peripheral registered
-     */
-
-    // activates peripheral data collection and port status reader
-    IREG0 = 0x03;
-
-    // identifies the type of peripheral connected
-    IREG1 = 0x01;
-
-    // allows the SMPC to communicate with every possible connected peripheral
-    IREG2 = 0x3F;
-
-
-    // execution of INTBACK (Interrupt Sending Info Back to Main System)
-    // purpose: updates the OREG values with the most recent peripheral data
-    // execution: executed on call not automated
-    if (!SMPC_ExecuteCommand(CMD_INTBACK)) {
-        printf("INTBACK command failed.\n");
-        return;
-    }
-
-    ProcessINTBACKResults();
-
-    printf("Completed scan of peripherals.\n");
-}
-
-void ProcessINTBACKResults(void) {
-
-    // the general status register of all peripheral connections
-    uint8_t portStatus = OREG0;
-    printf("Overall port status: 0x%02X\n", portStatus);
-
-    for (int i = 0; i < 2; i++) {
-        uint8_t controllerType = (i == 0) ? (OREG1 & 0xFF) : (OREG3 & 0xFF);
-        uint8_t controllerData = (i == 0) ? (OREG2 & 0xFF) : (OREG4 & 0xFF);
-
-        printf("Port %d\n", i+1);
-
-        switch(controllerType) {
-
-        }
-    }
 }
 
 void SMPC_HandleError(uint32_t error_code) {
