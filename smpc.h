@@ -111,7 +111,7 @@
 // Disable Netlink execution
 #define CMD_NETLINKOFF 0x0B
 
-// Reset the System
+  // Reset the System
 #define CMD_SYSRES 0x0D
 
 // Change system clockspeed (352)
@@ -200,35 +200,39 @@ void ProcessINTBACKResults(void);
  */
 uint32_t SMPC_GetPeripheralData(uint8_t port);
 
-// Retrieves the current time from the RTC (real-time clock)
-/*
- * CONSIDERATION: Saturn's RTC utilizes a 2-digit year... We need to handle the century
- *
+void SMPC_ResetCPUs();
+void SMPC_ResetMemory();
+void SMPC_ResetHardwareComponents();
+void SMPC_ResetCDBlock();
+void SMPC_ReinitializeBIOS();
+void SMPC_ResetSystemClocksAndTimers();
+void SMPC_ClearPendingInterrupts();
+void SMPC_ResetIOPortsAndPeripherals();
 
-Sega Saturn uses BCD for date format
+void ValidateRTCValues(uint8_t year, uint8_t month, uint8_t day, uint8_t dayOfWeek,
+                       uint8_t hour, uint8_t minute, uint8_t second);
+void HandleTime();
 
-BCD = Binary Coded Decimal
-
-Year: 00-99 (BCD)
-Month: 01-12 (BCD)
-Day: 01-31 (BCD)
-Hour: 00-23 (BCD)
-Minute: 00-59 (BCD)
-Second: 00-59 (BCD)
- */
-void SMPC_GetTime(uint8_t *year, uint8_t *month, uint8_t *day,
-                  uint8_t *hour, uint8_t *minute, uint8_t *second);
+typedef struct {
+ uint8_t year;
+ uint8_t month;
+ uint8_t day;
+ uint8_t dayOfTheWeek;
+ uint8_t hour;
+ uint8_t minute;
+ uint8_t second;
+} SaturnRtc;
 
 
 // Exceptions
-
-#define SMPC_TIMEOUT_VALUE 1000 // ms
 #define SMPC_ERROR_TIMEOUT 0x01
 #define SMPC_ERROR_INVALID_COMMAND 0x02
 #define SMPC_ERROR_HARDWARE_FAILURE 0x04
 
 // peripherals
-
 #define CONTROLLER_LIM 2
+
+// cpu rate
+#define CPU_CYCLES_PER_MICROSECOND 28.6363636
 
 #endif //SMPC_H

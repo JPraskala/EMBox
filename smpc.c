@@ -9,6 +9,7 @@
 // this can reduce redundant reseting operations to re-initailize or change to the same clock mode
 static uint8_t smpc_initialized = 0; // 1=initialized 0=not initialized
 static uint8_t current_clock_mode = 0; // 1=352(NTSC) mode 0=320(PAL) mode
+static SaturnRtc saturn_rtc;
 
 // initialize SMPC
 bool SMPC_Init(void) {
@@ -87,24 +88,93 @@ void SMPC_ChangeClockTo320(void) {
  * Takes a command (such as CMD_MSHON, CMD_SSHON) as a parameter
  * Writes the command to the COMREG (command reg)
  * Writing to the COMREG triggers the SMPC to start executing the command
- *
- * The timeout is needed to prevent infinite waiting (if it reaches zero from 1000 -- call the exception)
- * If the timeout = 0 before the SF is cleared to 0 then the command did not complete in time
- */
+ * */
 bool SMPC_ExecuteCommand(uint32_t command) {
     COMREG = command;
+    SF = 1;
+    uint32_t cycles_to_execute;
 
-    uint32_t timeout = SMPC_TIMEOUT_VALUE;
-    while (SF && timeout > 0) {
-        timeout--;
+    switch(command) {
+        case CMD_MSHON:
+        case CMD_SSHON:
+        case CMD_SSHOFF:
+        case CMD_SNDON:
+        case CMD_SNDOFF:
+        case CMD_CDON:
+        case CMD_CDOFF:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            break;
+
+        case CMD_NETLINKON:
+        case CMD_NETLINKOFF:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            break;
+
+        case CMD_SYSRES:
+            cycles_to_execute = (uint64_t)(100000 * CPU_CYCLES_PER_MICROSECOND);
+            SMPC_ResetCPUs();
+            SMPC_ResetMemory();
+            SMPC_ResetHardwareComponents();
+            SMPC_ResetCDBlock();
+            SMPC_ReinitializeBIOS();
+            SMPC_ResetSystemClocksAndTimers();
+            SMPC_ClearPendingInterrupts();
+            SMPC_ResetIOPortsAndPeripherals();
+            break;
+
+        case CMD_CKCHG352:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            current_clock_mode = 1;
+            break;
+
+        case CMD_CKCHG320:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            current_clock_mode = 0;
+            break;
+
+        case CMD_INTBACK:
+            cycles_to_execute = (uint64_t)(150 * CPU_CYCLES_PER_MICROSECOND);
+            SMPC_ScanPeripherals();
+            break;
+
+        case CMD_SETTIME:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+
+            // reading values from input registers
+            HandleTime();
+            // Set RTC time based on IREG values
+            break;
+
+        case CMD_SETSMEM:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            // Set 4-byte battery-backed memory based on IREG values
+            break;
+
+        case CMD_NMIREQ:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            // Send NMI request to Master SH2
+            break;
+
+        case CMD_RESENAB:
+        case CMD_RESDISA:
+            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
+            // Enable/Disable NMI requests on Reset button press
+            break;
+
+        default:
+            SMPC_HandleError(SMPC_ERROR_INVALID_COMMAND);
+            return false;
     }
 
-    if (timeout == 0) {
-        SMPC_HandleError(SMPC_ERROR_TIMEOUT);
-        return false;
+    // cannot exceed timeout value
+    while (cycles_to_execute > 0) {
+        cycles_to_execute--;
     }
 
     printf("SMPC command 0x%02X executed successfully.\n", (uint8_t)command);
+    // command is done processing
+    SR |= 0x01; // set first bit to 1
+    SF = 0; // done processing
     return true;
 }
 
@@ -122,4 +192,31 @@ void SMPC_HandleError(uint32_t error_code) {
         default:
             printf("SMPC Error: Unknown error code %u\n", error_code);
     }
+}
+
+void HandleTime() {
+    uint8_t year = IREG0 & 0xFF;     // Last two digits of year
+    uint8_t month = IREG1 & 0xFF;    // Month
+    uint8_t day = IREG2 & 0xFF;      // Day
+    uint8_t dayOfWeek = IREG3 & 0x7; // Day of week (0-6, where 0 = Sunday)
+    uint8_t hour = IREG4 & 0xFF;     // Hour
+    uint8_t minute = IREG5 & 0xFF;   // Minute
+    uint8_t second = IREG6 & 0xFF;   // Second
+
+    if (year > 0x99) year = 0x99;
+    if (month == 0 || month > 0x12) month = 0x01;
+    if (day == 0 || day > 0x31) day = 0x01;
+    if (dayOfWeek > 6) dayOfWeek = 0;
+    if (hour > 0x23) hour = 0x00;
+    if (minute > 0x59) minute = 0x00;
+    if (second > 0x59) second = 0x00;
+
+    saturn_rtc.year = year;
+    saturn_rtc.month = month;
+    saturn_rtc.day = day;
+    saturn_rtc.dayOfTheWeek = dayOfWeek;
+    saturn_rtc.hour = hour;
+    saturn_rtc.minute = minute;
+    saturn_rtc.second = second;
+
 }
