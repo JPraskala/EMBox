@@ -139,10 +139,8 @@ bool SMPC_ExecuteCommand(uint32_t command) {
 
         case CMD_SETTIME:
             cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-
-            // reading values from input registers
-            HandleTime();
             // Set RTC time based on IREG values
+            HandleTime();
             break;
 
         case CMD_SETSMEM:
@@ -219,4 +217,11 @@ void HandleTime() {
     saturn_rtc.minute = minute;
     saturn_rtc.second = second;
 
+    OREG31 = saturn_rtc.year;
+    // Day in upper 4 bits, Day of week in lower 4 bits
+    OREG30 = saturn_rtc.day << 4 | saturn_rtc.dayOfTheWeek;
+    OREG29 = saturn_rtc.hour;
+    OREG28 = saturn_rtc.minute;
+    OREG27 = saturn_rtc.second;
+    OREG26 = saturn_rtc.month;
 }
