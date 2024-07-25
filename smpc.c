@@ -299,7 +299,6 @@ void ProcessINTBACKResults(void) {
             }
         }
     }
-    SR = 0x01;
     SR |= 0x01;
 }
 
