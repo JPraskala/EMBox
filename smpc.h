@@ -22,38 +22,38 @@
 #define COMREG *(volatile uint32_t*)0x2010001F
 
 // ouput registers (output for the command register)
-#define OREG0   *(volatile uint32_t*)0x20100021
-#define OREG1   *(volatile uint32_t*)0x20100023
-#define OREG2   *(volatile uint32_t*)0x20100025
-#define OREG3   *(volatile uint32_t*)0x20100027
-#define OREG4   *(volatile uint32_t*)0x20100029
-#define OREG5   *(volatile uint32_t*)0x2010002B
-#define OREG6   *(volatile uint32_t*)0x2010002D
-#define OREG7   *(volatile uint32_t*)0x2010002F
-#define OREG8   *(volatile uint32_t*)0x20100031
-#define OREG9   *(volatile uint32_t*)0x20100033
-#define OREG10  *(volatile uint32_t*)0x20100035
-#define OREG11  *(volatile uint32_t*)0x20100037
-#define OREG12  *(volatile uint32_t*)0x20100039
-#define OREG13  *(volatile uint32_t*)0x2010003B
-#define OREG14  *(volatile uint32_t*)0x2010003D
-#define OREG15  *(volatile uint32_t*)0x2010003F
-#define OREG16  *(volatile uint32_t*)0x20100041
-#define OREG17  *(volatile uint32_t*)0x20100043
-#define OREG18  *(volatile uint32_t*)0x20100045
-#define OREG19  *(volatile uint32_t*)0x20100047
-#define OREG20  *(volatile uint32_t*)0x20100049
-#define OREG21  *(volatile uint32_t*)0x2010004B
-#define OREG22  *(volatile uint32_t*)0x2010004D
-#define OREG23  *(volatile uint32_t*)0x2010004F
-#define OREG24  *(volatile uint32_t*)0x20100051
-#define OREG25  *(volatile uint32_t*)0x20100053
-#define OREG26  *(volatile uint32_t*)0x20100055
-#define OREG27  *(volatile uint32_t*)0x20100057
-#define OREG28  *(volatile uint32_t*)0x20100059
-#define OREG29  *(volatile uint32_t*)0x2010005B
-#define OREG30  *(volatile uint32_t*)0x2010005D
-#define OREG31  *(volatile uint32_t*)0x2010005F
+#define OREG0 *(volatile uint32_t*)0x20100021
+#define OREG1 *(volatile uint32_t*)0x20100023
+#define OREG2 *(volatile uint32_t*)0x20100025
+#define OREG3 *(volatile uint32_t*)0x20100027
+#define OREG4 *(volatile uint32_t*)0x20100029
+#define OREG5 *(volatile uint32_t*)0x2010002B
+#define OREG6 *(volatile uint32_t*)0x2010002D
+#define OREG7 *(volatile uint32_t*)0x2010002F
+#define OREG8 *(volatile uint32_t*)0x20100031
+#define OREG9 *(volatile uint32_t*)0x20100033
+#define OREG10 *(volatile uint32_t*)0x20100035
+#define OREG11 *(volatile uint32_t*)0x20100037
+#define OREG12 *(volatile uint32_t*)0x20100039
+#define OREG13 *(volatile uint32_t*)0x2010003B
+#define OREG14 *(volatile uint32_t*)0x2010003D
+#define OREG15 *(volatile uint32_t*)0x2010003F
+#define OREG16 *(volatile uint32_t*)0x20100041
+#define OREG17 *(volatile uint32_t*)0x20100043
+#define OREG18 *(volatile uint32_t*)0x20100045
+#define OREG19 *(volatile uint32_t*)0x20100047
+#define OREG20 *(volatile uint32_t*)0x20100049
+#define OREG21 *(volatile uint32_t*)0x2010004B
+#define OREG22 *(volatile uint32_t*)0x2010004D
+#define OREG23 *(volatile uint32_t*)0x2010004F
+#define OREG24 *(volatile uint32_t*)0x20100051
+#define OREG25 *(volatile uint32_t*)0x20100053
+#define OREG26 *(volatile uint32_t*)0x20100055
+#define OREG27 *(volatile uint32_t*)0x20100057
+#define OREG28 *(volatile uint32_t*)0x20100059
+#define OREG29 *(volatile uint32_t*)0x2010005B
+#define OREG30 *(volatile uint32_t*)0x2010005D
+#define OREG31 *(volatile uint32_t*)0x2010005F
 
 // status register
 #define SR *(volatile uint32_t*)0x20100061
@@ -186,11 +186,12 @@ bool SMPC_ExecuteCommand(uint32_t command);
 // Handles errors
 void SMPC_HandleError(uint32_t error_code);
 
-// Scans all connected peripherals
+
+
+
 /*
- * Sends the INTBACK command to the SMPC to display status
+ * Sends the INTBACK command to the SMPC to display status and get peripheral data
  */
-void SMPC_ScanPeripherals(void);
 
 void ProcessINTBACKResults(void);
 
@@ -211,7 +212,10 @@ void SMPC_ResetIOPortsAndPeripherals();
 
 void ValidateRTCValues(uint8_t year, uint8_t month, uint8_t day, uint8_t dayOfWeek,
                        uint8_t hour, uint8_t minute, uint8_t second);
-void HandleTime();
+void HandleTime(void);
+
+void HandleStatusData();
+
 
 typedef struct {
  uint8_t year;
@@ -223,11 +227,24 @@ typedef struct {
  uint8_t second;
 } SaturnRtc;
 
+enum Port {
+ PORT_1 = 1,
+ PORT_2 = 2
+};
+
+enum PortMode {
+ FIFTEEN_BYTE_MODE = 15,
+ TWO_HUNDRED_FIFTY_FIVE_MODE = 255
+};
+
+void ScanPeripheral(enum Port port, enum PortMode port_mode, bool optimizeAcquisitionTime);
+
 
 // Exceptions
 #define SMPC_ERROR_TIMEOUT 0x01
 #define SMPC_ERROR_INVALID_COMMAND 0x02
 #define SMPC_ERROR_HARDWARE_FAILURE 0x04
+#define SMPC_ERROR_INVALID_INTBACK_PARAM 0x06
 
 // peripherals
 #define CONTROLLER_LIM 2

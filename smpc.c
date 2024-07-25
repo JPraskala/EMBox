@@ -133,13 +133,12 @@ bool SMPC_ExecuteCommand(uint32_t command) {
             break;
 
         case CMD_INTBACK:
-            cycles_to_execute = (uint64_t)(150 * CPU_CYCLES_PER_MICROSECOND);
-            SMPC_ScanPeripherals();
+            cycles_to_execute = (uint64_t)(320 * CPU_CYCLES_PER_MICROSECOND);
+            ProcessINTBACKResults();
             break;
 
         case CMD_SETTIME:
             cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            // Set RTC time based on IREG values
             HandleTime();
             break;
 
@@ -187,12 +186,15 @@ void SMPC_HandleError(uint32_t error_code) {
         case SMPC_ERROR_HARDWARE_FAILURE:
             printf("SMPC Error: Hardware failure\n");
         break;
+        case SMPC_ERROR_INVALID_INTBACK_PARAM:
+            printf("SMPC Error: Intback parameter 2 not properly set to F0H\n");
+            break;
         default:
             printf("SMPC Error: Unknown error code %u\n", error_code);
     }
 }
 
-void HandleTime() {
+void HandleTime(void) {
     uint8_t year = IREG0 & 0xFF;     // Last two digits of year
     uint8_t month = IREG1 & 0xFF;    // Month
     uint8_t day = IREG2 & 0xFF;      // Day
@@ -225,3 +227,88 @@ void HandleTime() {
     OREG27 = saturn_rtc.second;
     OREG26 = saturn_rtc.month;
 }
+
+void ProcessINTBACKResults(void) {
+    uint8_t firstParam = IREG0;
+    uint8_t secondParam = IREG1;
+    // signal register
+    uint8_t thirdParam = IREG2;
+
+    // IREG2 not properly set
+    if (thirdParam != 0xF0) {
+        SMPC_HandleError(SMPC_ERROR_INVALID_INTBACK_PARAM);
+        return;
+    }
+
+
+    // just get smpc status
+    if (firstParam == 0x01) {
+        HandleStatusData();
+    // either just get peripheral data or both
+    } else if (firstParam == 0x00 || firstParam == 0x02) {
+        // parsing the IREG0
+        bool optimizeAcquisitionTime = (secondParam & 0x01) != 0; // Bit 0
+        bool getPeripheralData = (secondParam & 0x02) != 0; // Bit 1
+        bool getPort1Data = (secondParam & 0x04) != 0; // Bit 2
+        bool getPort2Data = (secondParam & 0x10) != 0; // Bit 4
+
+        uint8_t port1Mode = (secondParam >> 4) & 0x03; // Bits 5-4 (masking via 0x11)
+        uint8_t port2Mode = (secondParam >> 6) & 0x03; // Bits 7-6 (masking via 0x11)
+        if (getPeripheralData) {
+            enum Port port;
+            enum PortMode port_mode;
+            if (getPort1Data) {
+                switch (port1Mode) {
+                    case 0:
+                        port = PORT_1;
+                        port_mode = FIFTEEN_BYTE_MODE;
+                        ScanPeripheral(port, port_mode, optimizeAcquisitionTime);
+                        break;
+                    case 1:
+                        port = PORT_1;
+                        port_mode = TWO_HUNDRED_FIFTY_FIVE_MODE;
+                        ScanPeripheral(port, port_mode, optimizeAcquisitionTime);
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        break;
+                    default:
+                        break;
+                }
+            }
+            if (getPort2Data) {
+                switch (port2Mode) {
+                    case 0:
+                        port = PORT_2;
+                        port_mode = FIFTEEN_BYTE_MODE;
+                        ScanPeripheral(port, port_mode, optimizeAcquisitionTime);
+                        break;
+                    case 1:
+                        port = PORT_2;
+                        port_mode = TWO_HUNDRED_FIFTY_FIVE_MODE;
+                        ScanPeripheral(port, port_mode, optimizeAcquisitionTime);
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        break;
+                    default:
+                        break;;
+                }
+            }
+        }
+
+            /*
+             * PORT 2
+             * 15-byte mode = bit7=0 & bit6=0
+             * 255-byte mode = bit7=0 & bit6=1
+             * SEGA RESERVED = bit7=1 & bit6=0
+             * 0-byte mode = bit7=1 & bit6=0
+             *
+             * where bit7 is P2MD1 and bit6 is P2MD0
+             */
+        }
+    SR |= 0x01;
+}
+
