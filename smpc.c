@@ -298,17 +298,8 @@ void ProcessINTBACKResults(void) {
                 }
             }
         }
-
-            /*
-             * PORT 2
-             * 15-byte mode = bit7=0 & bit6=0
-             * 255-byte mode = bit7=0 & bit6=1
-             * SEGA RESERVED = bit7=1 & bit6=0
-             * 0-byte mode = bit7=1 & bit6=0
-             *
-             * where bit7 is P2MD1 and bit6 is P2MD0
-             */
-        }
+    }
+    SR = 0x01;
     SR |= 0x01;
 }
 
