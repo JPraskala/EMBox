@@ -7,4 +7,6 @@ add_executable(EMBox main.c
         audio/headers/motorola.h
         audio/headers/scsp.h
         audio/c_files/motorola.c
-        audio/c_files/scsp.c)
+        audio/c_files/scsp.c
+        audio/c_files/dac.c
+        audio/headers/dac.h)
