@@ -66,7 +66,7 @@ typedef enum {
 
 // Saturn RTC structure
 typedef struct {
-    uint8_t year;
+    uint16_t year; // combining both IREG0 & IREG1
     uint8_t month;
     uint8_t day;
     uint8_t dayOfTheWeek;

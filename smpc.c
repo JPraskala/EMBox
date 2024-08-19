@@ -181,5 +181,56 @@ int SMPC_ExecuteCommand(uint32_t* command) {
     return 0;
 }
 
+void SMPC_HandleError(const uint32_t error_code) {
+    switch(error_code) {
+        case SMPC_ERROR_TIMEOUT:
+            printf("SMPC Error: Command timeout\n");
+        break;
+        case SMPC_ERROR_INVALID_COMMAND:
+            printf("SMPC Error: Invalid command\n");
+        break;
+        case SMPC_ERROR_HARDWARE_FAILURE:
+            printf("SMPC Error: Hardware failure\n");
+        break;
+        case SMPC_ERROR_INVALID_INTBACK_PARAM:
+            printf("SMPC Error: Intback parameter 2 not properly set to F0H\n");
+        break;
+        default:
+            printf("SMPC Error: Unknown error code %u\n", error_code);
+    }
+}
 
 
+
+void HandleTime(void) {
+    uint8_t year = *(SMPC_REGISTERS->ireg[0]) & 0xFFFF; // 4 digit year
+    uint8_t month = *(SMPC_REGISTERS->ireg[1]) & 0xFF;    // Month
+    uint8_t day = *(SMPC_REGISTERS->ireg[2]) & 0xFF;      // Day
+    uint8_t dayOfWeek = *(SMPC_REGISTERS->ireg[3]) & 0x7; // Day of week (0-6, where 0 = Sunday)
+    uint8_t hour = *(SMPC_REGISTERS->ireg[4]) & 0xFF;     // Hour
+    uint8_t minute = *(SMPC_REGISTERS->ireg[5]) & 0xFF;   // Minute
+    uint8_t second = *(SMPC_REGISTERS->ireg[6]) & 0xFF;   // Second
+
+    if (year > 9999) year = 9999;
+    if (month == 0 || month > 12) month = 12;
+    if (day == 0 || day > 31) day = 31;
+    if (dayOfWeek > 6) dayOfWeek = 6;
+    if (hour > 23) hour = 23;
+    if (minute > 59) minute = 59;
+    if (second > 59) second = 59;
+
+    saturn_rtc.year = year;
+    saturn_rtc.month = month;
+    saturn_rtc.day = day;
+    saturn_rtc.dayOfTheWeek = dayOfWeek;
+    saturn_rtc.hour = hour;
+    saturn_rtc.minute = minute;
+    saturn_rtc.second = second;
+
+    *(SMPC_REGISTERS->oreg[31]) = saturn_rtc.year;
+    *(SMPC_REGISTERS->oreg[30]) = saturn_rtc.day << 4 | saturn_rtc.dayOfTheWeek;
+    *(SMPC_REGISTERS->oreg[29]) = saturn_rtc.hour;
+    *(SMPC_REGISTERS->oreg[28]) = saturn_rtc.minute;
+    *(SMPC_REGISTERS->oreg[27]) = saturn_rtc.second;
+    *(SMPC_REGISTERS->oreg[26]) = saturn_rtc.month;
+}
