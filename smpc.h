@@ -1,7 +1,3 @@
-//
-// Created by andrewpraskala on 7/11/24.
-//
-
 #ifndef SMPC_H
 #define SMPC_H
 
@@ -81,12 +77,12 @@ typedef struct {
 
 // System Initialization Operations
 
-bool SMPC_Init(void);
+int SMPC_Init(void);
 void SMPC_PowerOn(void);
 void SMPC_Reset(void);
 void SMPC_ChangeClockTo352(void);
 void SMPC_ChangeClockTo320(void);
-bool SMPC_ExecuteCommand(SMPC_Command command);
+int SMPC_ExecuteCommand(SMPC_Command command);
 void SMPC_HandleError(SMPC_Error error_code);
 void SMPC_ProcessINTBACKResults(void);
 uint32_t SMPC_GetPeripheralData(uint8_t port);
@@ -102,6 +98,6 @@ void SMPC_ValidateRTCValues(uint8_t year, uint8_t month, uint8_t day, uint8_t da
                        uint8_t hour, uint8_t minute, uint8_t second);
 void SMPC_HandleTime(void);
 void SMPC_HandleStatusData(void);
-void SMPC_ScanPeripheral(Port port, PortMode port_mode, bool optimizeAcquisitionTime);
+void SMPC_ScanPeripheral(Port port, PortMode port_mode, int optimizeAcquisitionTime);
 
 #endif //SMPC_H
