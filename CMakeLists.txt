@@ -5,6 +5,11 @@ set(CMAKE_C_STANDARD 23)
 
 # Find the OpenGL package
 find_package(OpenGL REQUIRED)
+set(GLAD_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/glad/src")
+set(GLAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glad/include")
+
+add_library(glad "${GLAD_SOURCE_DIR}/glad.c")
+target_include_directories(glad PUBLIC "${GLAD_INCLUDE_DIR}")
 
 # Include the OpenGL headers
 include_directories(${OPENGL_INCLUDE_DIRS})
@@ -19,4 +24,4 @@ add_executable(EMBox
 )
 
 # Link the OpenGL libraries to your executable
-target_link_libraries(EMBox ${OPENGL_LIBRARIES})
+target_link_libraries(EMBox glad ${OPENGL_LIBRARIES})
