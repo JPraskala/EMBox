@@ -3,4 +3,6 @@ project(EMBox C)
 
 set(CMAKE_C_STANDARD 23)
 
-add_executable(EMBox main.c)
+add_executable(EMBox main.c
+        smpc.c
+        smpc.h)
