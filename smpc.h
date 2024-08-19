@@ -79,6 +79,7 @@ typedef struct {
 
 int SMPC_Init(void);
 void SMPC_PowerOn(void);
+void SMPC_PowerOff(void);
 void SMPC_Reset(void);
 void SMPC_ChangeClockTo352(void);
 void SMPC_ChangeClockTo320(void);
