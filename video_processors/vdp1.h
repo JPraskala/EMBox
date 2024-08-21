@@ -1,7 +1,8 @@
-#pragma once
+#ifndef VDP1_H
+#define VDP1_H
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <time.h>
@@ -20,25 +21,25 @@ typedef struct {
 } MemoryMap;
 
 typedef struct {
-    Word TVHR;
-    Word FBCR;
-    Word PTMR;
-    Word EWLR;
-    Word EWRR;
-    Word ENDR;
-    Word TVMR;
-    Word EWDR;
-    const Word EDSR;
-    const Word LOPR;
-    const Word COPR;
-    const Word MODR;
+    LongWord TVHR;
+    LongWord FBCR;
+    LongWord PTMR;
+    LongWord EWLR;
+    LongWord EWRR;
+    LongWord ENDR;
+    LongWord TVMR;
+    LongWord EWDR;
+    const LongWord EDSR;
+    const LongWord LOPR;
+    const LongWord COPR;
+    const LongWord MODR;
 } SystemRegisters;
 
 typedef struct {
-    LongWord COMMANDTABLE;
-    LongWord COLORTABLE;
-    LongWord GOURAUD;
-    LongWord CHARACTERPATTERN;
+    Word COMMANDTABLE;
+    Word COLORTABLE;
+    Word GOURAUD;
+    Word CHARACTERPATTERN;
 } AdditionalRegisters;
 
 /*
@@ -92,7 +93,7 @@ typedef struct {
 typedef enum {NORMAL, SCALED, DISTORTED} SpriteMode;
 
 typedef struct {
-    Byte* sprite;
+    GLubyte* sprite;
     SpriteMode mode;
     GLfloat x;
     GLfloat y;
@@ -101,7 +102,12 @@ typedef struct {
 typedef enum {NON_INTERLACE, SINGLE_INTERLACE, DOUBLE_INTERLACE} ScreenMode;
 
 
-void openglValidation();
-static void* initMemory(size_t size);
-static void printSpriteInfo(Byte* sprite);
+bool openglValidation();
+static bool cudaTest();
+static volatile MemoryMap* createMemoryMap();
+static volatile SystemRegisters* createSystemRegisters();
+static volatile AdditionalRegisters* createAdditionalRegisters();
+static void printSpriteInfo(GLubyte* sprite);
 Byte* getGraphicsROM();
+
+#endif
