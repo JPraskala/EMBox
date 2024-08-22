@@ -116,14 +116,6 @@ int SMPC_ExecuteCommand(uint32_t* command) {
 
         case CMD_SYSRES:
             cycles_to_execute = (uint64_t)(100000 * CPU_CYCLES_PER_MICROSECOND);
-            SMPC_ResetCPUs();
-            SMPC_ResetMemory();
-            SMPC_ResetHardwareComponents();
-            SMPC_ResetCDBlock();
-            SMPC_ReinitializeBIOS();
-            SMPC_ResetSystemClocksAndTimers();
-            SMPC_ClearPendingInterrupts();
-            SMPC_ResetIOPortsAndPeripherals();
             break;
 
         case CMD_CKCHG352:
@@ -153,7 +145,7 @@ int SMPC_ExecuteCommand(uint32_t* command) {
 
         case CMD_NMIREQ:
             cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            // Send NMI request to Master SH2
+            SMPC_NMIReq();
             break;
 
         case CMD_RESENAB:
@@ -181,29 +173,8 @@ int SMPC_ExecuteCommand(uint32_t* command) {
     return 0;
 }
 
-void SMPC_HandleError(const uint32_t error_code) {
-    switch(error_code) {
-        case SMPC_ERROR_TIMEOUT:
-            printf("SMPC Error: Command timeout\n");
-        break;
-        case SMPC_ERROR_INVALID_COMMAND:
-            printf("SMPC Error: Invalid command\n");
-        break;
-        case SMPC_ERROR_HARDWARE_FAILURE:
-            printf("SMPC Error: Hardware failure\n");
-        break;
-        case SMPC_ERROR_INVALID_INTBACK_PARAM:
-            printf("SMPC Error: Intback parameter 2 not properly set to F0H\n");
-        break;
-        default:
-            printf("SMPC Error: Unknown error code %u\n", error_code);
-    }
-}
-
-
-
 void HandleTime(void) {
-    uint8_t year = *(SMPC_REGISTERS->ireg[0]) & 0xFFFF; // 4 digit year
+    uint16_t year = *(SMPC_REGISTERS->ireg[0]) & 0xFFFF; // 4 digit year
     uint8_t month = *(SMPC_REGISTERS->ireg[1]) & 0xFF;    // Month
     uint8_t day = *(SMPC_REGISTERS->ireg[2]) & 0xFF;      // Day
     uint8_t dayOfWeek = *(SMPC_REGISTERS->ireg[3]) & 0x7; // Day of week (0-6, where 0 = Sunday)
@@ -233,4 +204,124 @@ void HandleTime(void) {
     *(SMPC_REGISTERS->oreg[28]) = saturn_rtc.minute;
     *(SMPC_REGISTERS->oreg[27]) = saturn_rtc.second;
     *(SMPC_REGISTERS->oreg[26]) = saturn_rtc.month;
+}
+
+void SMPC_ProcessINTBACKResults(void) {
+    const uint8_t firstParam = *(SMPC_REGISTERS->ireg[0]);
+    const uint8_t secondParam = *(SMPC_REGISTERS->ireg[1]);
+    const uint8_t thirdParam = *(SMPC_REGISTERS->ireg[2]);
+    if (thirdParam != 0xF0) {
+        SMPC_HandleError(SMPC_ERROR_INVALID_INTBACK_PARAM);
+        return;
+    }
+    if (firstParam == 0x01) {
+        SMPC_HandleStatusData();
+    } else if(firstParam == 0x00 || firstParam == 0x02) {
+        const uint8_t acquisitionTime_IsOptimized = (secondParam & 0x01) == 0;
+        const uint8_t peripheralData_IsEnabled = (secondParam & 0x04) == 0;
+        const uint8_t port1_15ByteMode = ((secondParam >> 6) & 0x00) == 0;
+        const uint8_t port1_255ByteMode = ((secondParam >> 6) & 0x04) == 0;
+        const uint8_t port2_15ByteMode = ((secondParam >> 4) & 0x00) == 0;
+        const uint8_t port2_255ByteMode = ((secondParam >> 4) & 0x04) == 0;
+        if (peripheralData_IsEnabled) {
+            enum Port port;
+            enum PortMode port_mode;
+            if (port1_15ByteMode) {
+                port = PORT_1;
+                port_mode = FIFTEEN_BYTE_MODE;
+                SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
+            } else if (port1_255ByteMode) {
+                port = PORT_1;
+                port_mode = TWO_HUNDRED_FIFTY_FIVE_MODE;
+                SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
+            }
+
+            if (port2_15ByteMode) {
+                port = PORT_2;
+                port_mode = FIFTEEN_BYTE_MODE;
+                SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
+            } else if (port2_255ByteMode) {
+                port = PORT_2;
+                port_mode = TWO_HUNDRED_FIFTY_FIVE_MODE;
+                SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
+            } else {
+                printf("Invalid Mode\n");
+            }
+        }
+    } else {
+        printf("Break request\n");
+    }
+    *(SMPC_REGISTERS->sr) |= 0x01;
+}
+
+void SMPC_MSHON() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x00;
+}
+
+void SMPC_SSHON() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x02;
+}
+
+void SMPC_SSHOFF() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x03;
+}
+
+void SMPC_SNDON() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x06;
+}
+
+void SMPC_SNDOFF() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x7;
+}
+
+void SMPC_CDON() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x08;
+}
+
+void SMPC_CDOFF() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x09;
+}
+
+void SMPC_SYSRES() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x0D;
+}
+
+void SMPC_CKCHG352() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x0E;
+}
+
+void SMPC_CKCHG320() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x0F;
+}
+
+void SMPC_NMIReq() {
+    // send interrupt
+    *(SMPC_REGISTERS->oreg[31]) = 0x18;
+}
+
+void SMPC_RESENAB() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x19;
+}
+
+void SMPC_RESDISA() {
+    *(SMPC_REGISTERS->oreg[31]) = 0x1A;
+}
+
+void SMPC_HandleError(const uint32_t error_code) {
+    switch(error_code) {
+        case SMPC_ERROR_TIMEOUT:
+            printf("SMPC Error: Command timeout\n");
+        break;
+        case SMPC_ERROR_INVALID_COMMAND:
+            printf("SMPC Error: Invalid command\n");
+        break;
+        case SMPC_ERROR_HARDWARE_FAILURE:
+            printf("SMPC Error: Hardware failure\n");
+        break;
+        case SMPC_ERROR_INVALID_INTBACK_PARAM:
+            printf("SMPC Error: Intback parameter 2 not properly set to F0H\n");
+        break;
+        default:
+            printf("SMPC Error: Unknown error code %u\n", error_code);
+    }
 }

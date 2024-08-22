@@ -88,17 +88,24 @@ void SMPC_HandleError(SMPC_Error error_code);
 void SMPC_ProcessINTBACKResults(void);
 uint32_t SMPC_GetPeripheralData(uint8_t port);
 void SMPC_ResetCPUs(void);
-void SMPC_ResetMemory(void);
-void SMPC_ResetHardwareComponents(void);
-void SMPC_ResetCDBlock(void);
-void SMPC_ReinitializeBIOS(void);
-void SMPC_ResetSystemClocksAndTimers(void);
-void SMPC_ClearPendingInterrupts(void);
-void SMPC_ResetIOPortsAndPeripherals(void);
 void SMPC_ValidateRTCValues(uint8_t year, uint8_t month, uint8_t day, uint8_t dayOfWeek,
                        uint8_t hour, uint8_t minute, uint8_t second);
 void SMPC_HandleTime(void);
 void SMPC_HandleStatusData(void);
 void SMPC_ScanPeripheral(Port port, PortMode port_mode, int optimizeAcquisitionTime);
+void SMPC_NMIReq(void);
+void SMPC_RESENAB(void);
+void SMPC_RESDISA(void);
+void SMPC_MSHON(void);
+void SMPC_SSHON(void);
+void SMPC_SSHOFF(void);
+void SMPC_SNDON(void);
+void SMPC_SNDOFF(void);
+void SMPC_CDON(void);
+void SMPC_CDOFF(void);
+void SMPC_SYSRES(void);
+void SMPC_CKCHG352(void);
+void SMPC_CKCHG320(void);
+
 
 #endif //SMPC_H
