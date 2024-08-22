@@ -102,12 +102,10 @@ typedef struct {
 typedef enum {NON_INTERLACE, SINGLE_INTERLACE, DOUBLE_INTERLACE} ScreenMode;
 
 
-bool openglValidation();
-static bool cudaTest();
-static volatile MemoryMap* createMemoryMap();
-static volatile SystemRegisters* createSystemRegisters();
-static volatile AdditionalRegisters* createAdditionalRegisters();
+void openglValidation();
+static void enableCuda();
 static void printSpriteInfo(GLubyte* sprite);
 Byte* getGraphicsROM();
+void displayGraphicsInfo();
 
 #endif
