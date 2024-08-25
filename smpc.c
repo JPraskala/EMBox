@@ -92,86 +92,71 @@ void SMPC_ChangeClockTo320(void) {
     printf("Clock changed to 320 mode.\n");
 }
 
-int SMPC_ExecuteCommand(uint32_t* command) {
-    SMPC_REGISTERS->comreg = command;
+void SMPC_DelayMicroseconds(const uint32_t microseconds) {
+    // number of CPU cycles required for the delay
+    const uint32_t cycles_to_wait = microseconds * CPU_CYCLES_PER_MICROSECOND;
+
+    uint32_t counter = cycles_to_wait;
+    while (counter > 0) {
+        counter--;
+    }
+}
+
+int SMPC_ExecuteCommand(uint32_t command) {
+    SMPC_REGISTERS->comreg = &command;
     uint32_t status = 1;
     *(SMPC_REGISTERS->sf) = status;
+
     uint32_t cycles_to_execute;
 
     switch(command) {
         case CMD_MSHON:
+            cycles_to_execute = 30;
+        break;
         case CMD_SSHON:
+            cycles_to_execute = 30;
+        break;
         case CMD_SSHOFF:
+            cycles_to_execute = 30;
+        break;
         case CMD_SNDON:
+            cycles_to_execute = 30;
+        break;
         case CMD_SNDOFF:
+            cycles_to_execute = 30;
+        break;
         case CMD_CDON:
+            cycles_to_execute = 30;
+        break;
         case CMD_CDOFF:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            break;
-
-        case CMD_NETLINKON:
-        case CMD_NETLINKOFF:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            break;
-
+            cycles_to_execute = 30;
+        break;
         case CMD_SYSRES:
-            cycles_to_execute = (uint64_t)(100000 * CPU_CYCLES_PER_MICROSECOND);
-            break;
-
+            cycles_to_execute = 100000;
+        break;
         case CMD_CKCHG352:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            current_clock_mode = 1;
-            break;
-
+            cycles_to_execute = 30;
+        break;
         case CMD_CKCHG320:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            current_clock_mode = 0;
-            break;
-
-        case CMD_INTBACK:
-            cycles_to_execute = (uint64_t)(320 * CPU_CYCLES_PER_MICROSECOND);
-            SMPC_ProcessINTBACKResults();
-            break;
-
-        case CMD_SETTIME:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            SMPC_HandleTime();
-            break;
-
-        case CMD_SETSMEM:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            // Set 4-byte battery-backed memory based on IREG values
-            break;
-
-        case CMD_NMIREQ:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            SMPC_NMIReq();
-            break;
-
-        case CMD_RESENAB:
-        case CMD_RESDISA:
-            cycles_to_execute = (uint64_t)(30 * CPU_CYCLES_PER_MICROSECOND);
-            // Enable/Disable NMI requests on Reset button press
-            break;
-
+            cycles_to_execute = 30;
+        break;
         default:
             SMPC_HandleError(SMPC_ERROR_INVALID_COMMAND);
-            return 1;
+        return 1;
     }
 
-    // cannot exceed timeout value
-    int accum = 0;
-    while (cycles_to_execute > accum) {
-        accum++;
-    }
+    const uint32_t delay_microseconds = (cycles_to_execute / CPU_CYCLES_PER_MICROSECOND);
+
+    SMPC_DelayMicroseconds(delay_microseconds);
+
+    *(SMPC_REGISTERS->sr) |= 0x01;
+    status = 0;
+    *(SMPC_REGISTERS->sf) = status;
 
     printf("SMPC command 0x%02X executed successfully.\n", (uint8_t)command);
-    // command is done processing
-    *(SMPC_REGISTERS->sr) |= 0x01; // set first bit to 1
-    status = 0;
-    *(SMPC_REGISTERS->sf) = status; // done processing
     return 0;
 }
+
 
 void HandleTime(void) {
     uint16_t year = *(SMPC_REGISTERS->ireg[0]) & 0xFFFF; // 4 digit year
@@ -218,29 +203,31 @@ void SMPC_ProcessINTBACKResults(void) {
         SMPC_HandleStatusData();
     } else if(firstParam == 0x00 || firstParam == 0x02) {
         const uint8_t acquisitionTime_IsOptimized = (secondParam & 0x01) == 0;
-        const uint8_t peripheralData_IsEnabled = (secondParam & 0x04) == 0;
-        const uint8_t port1_15ByteMode = ((secondParam >> 6) & 0x00) == 0;
-        const uint8_t port1_255ByteMode = ((secondParam >> 6) & 0x04) == 0;
-        const uint8_t port2_15ByteMode = ((secondParam >> 4) & 0x00) == 0;
-        const uint8_t port2_255ByteMode = ((secondParam >> 4) & 0x04) == 0;
-        if (peripheralData_IsEnabled) {
+        const uint8_t peripheralData_IsEnabled = (secondParam & 0x02) == 0;
+        // 0000 0010
+        const uint8_t port1_15ByteMode = ((secondParam >> 4) & 0x00) == 0;
+        const uint8_t port1_255ByteMode = ((secondParam >> 4) & 0x01) == 0;
+        const uint8_t port2_15ByteMode = ((secondParam >> 6) & 0x00) == 0;
+        const uint8_t port2_255ByteMode = ((secondParam >> 6) & 0x01) == 1;
+
+        if (peripheralData_IsEnabled == 0) {
             enum Port port;
             enum PortMode port_mode;
-            if (port1_15ByteMode) {
+            if (port1_15ByteMode == 0) {
                 port = PORT_1;
                 port_mode = FIFTEEN_BYTE_MODE;
                 SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
-            } else if (port1_255ByteMode) {
+            } else if (port1_255ByteMode == 0) {
                 port = PORT_1;
                 port_mode = TWO_HUNDRED_FIFTY_FIVE_MODE;
                 SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
             }
 
-            if (port2_15ByteMode) {
+            if (port2_15ByteMode == 0) {
                 port = PORT_2;
                 port_mode = FIFTEEN_BYTE_MODE;
                 SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
-            } else if (port2_255ByteMode) {
+            } else if (port2_255ByteMode == 0) {
                 port = PORT_2;
                 port_mode = TWO_HUNDRED_FIFTY_FIVE_MODE;
                 SMPC_ScanPeripheral(port, port_mode, acquisitionTime_IsOptimized);
@@ -255,55 +242,67 @@ void SMPC_ProcessINTBACKResults(void) {
 }
 
 void SMPC_MSHON() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x00;
 }
 
 void SMPC_SSHON() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x02;
 }
 
 void SMPC_SSHOFF() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x03;
 }
 
 void SMPC_SNDON() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x06;
 }
 
 void SMPC_SNDOFF() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x7;
 }
 
 void SMPC_CDON() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x08;
 }
 
 void SMPC_CDOFF() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x09;
 }
 
 void SMPC_SYSRES() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x0D;
 }
 
 void SMPC_CKCHG352() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x0E;
 }
 
 void SMPC_CKCHG320() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x0F;
 }
 
 void SMPC_NMIReq() {
-    // send interrupt
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x18;
 }
 
 void SMPC_RESENAB() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x19;
 }
 
 void SMPC_RESDISA() {
+    // Call interrupt from sh2
     *(SMPC_REGISTERS->oreg[31]) = 0x1A;
 }
 
