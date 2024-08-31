@@ -21,6 +21,7 @@ add_executable(EMBox
         video_processors/vdp1.h
         video_processors/vdp2.c
         video_processors/vdp2.h
+        video_processors/graphicsManager.c
 )
 
 # Link the OpenGL libraries to your executable
