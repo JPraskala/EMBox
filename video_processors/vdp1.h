@@ -4,9 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
-#include <time.h>
+#include <GLFW/glfw3.h>
 
 
 typedef uint32_t LongWord;
@@ -31,10 +30,10 @@ typedef struct {
     LongWord ENDR;
     LongWord TVMR;
     LongWord EWDR;
-    const LongWord EDSR;
-    const LongWord LOPR;
-    const LongWord COPR;
-    const LongWord MODR;
+    LongWord EDSR;
+    LongWord LOPR;
+    LongWord COPR;
+    LongWord MODR;
 } SystemRegisters;
 
 typedef struct {
@@ -76,13 +75,11 @@ typedef enum {MODE0, MODE1, MODE2, MODE3, MODE4, MODE5} ColorModes;
 typedef enum {REPLACE, SHADOW, HALF_LUMINANCE, HALF_TRANSPARENCY, GOURAUD_SHADING} ColorCalculations; // Note Gouraud can use both half luminance and half transparency, this needs to be accounted for when working with colors.
 
 VDP1* initVDP1();
-static MemoryMap* initMemoryMap();
-static SystemRegisters* createRegisters();
-static AdditionalRegisters* createAdditionalRegisters();
-void createColors(ColorModes colorMode, ColorCalculations colorCalc);
-void drawSprite(SpriteMode mode, MemoryMap* mMap);
-void systemClipping();
-void userClipping();
+static void initMemory(VDP1* vdp1);
+// static void initSystemRegisters(SystemRegisters* systemRegisters);
+void drawSprite(SpriteMode mode, ColorModes colorMode, ColorCalculations colorCalculations, VDP1* vdp1);
+void systemClipping(VDP1* vdp1);
+void userClipping(VDP1* vdp1);
 void freeVDP1(VDP1* vdp1);
 
 #endif

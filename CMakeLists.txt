@@ -2,19 +2,22 @@ cmake_minimum_required(VERSION 3.28)
 project(EMBox C)
 
 set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Find the OpenGL package
+# Find OpenGL
 find_package(OpenGL REQUIRED)
+include_directories(${OPENGL_INCLUDE_DIRS})
+
+# Find GLFW
+find_package(glfw3 REQUIRED)
+
+# Glad setup
 set(GLAD_SOURCE_DIR "${CMAKE_SOURCE_DIR}/external/glad/src")
 set(GLAD_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glad/include")
-
 add_library(glad "${GLAD_SOURCE_DIR}/glad.c")
 target_include_directories(glad PUBLIC "${GLAD_INCLUDE_DIR}")
 
-# Include the OpenGL headers
-include_directories(${OPENGL_INCLUDE_DIRS})
-
-# Add your executable
+# Add the executable
 add_executable(EMBox
         main.c
         video_processors/vdp1.c
@@ -24,5 +27,5 @@ add_executable(EMBox
         video_processors/graphicsManager.c
 )
 
-# Link the OpenGL libraries to your executable
-target_link_libraries(EMBox glad ${OPENGL_LIBRARIES})
+# Link libraries
+target_link_libraries(EMBox glad glfw ${OPENGL_LIBRARIES})
