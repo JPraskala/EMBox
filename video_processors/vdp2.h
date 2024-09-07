@@ -11,6 +11,7 @@ typedef enum {BACK, LINE_COLOR} LineScreens;
 void createWindow(GLint width, GLint height);
 static void framebuffer_size_callback(GLFWwindow* windowCopy, int width, int height);
 void windowLoop();
+static void testInput();
 void closeWindow();
 
 

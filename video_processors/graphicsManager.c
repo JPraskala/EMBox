@@ -1,6 +1,6 @@
 #include "vdp1.h"
 #include "vdp2.h"
-
+#include <string.h>
 
 GLuint VAO, VBO, EBO;
 bool debugMode = false; // This will call the displayGraphicsInfo function if set to true.
@@ -12,8 +12,13 @@ static void setupWindowHints() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
+static void enableCuda() {
+    printf("This might be something I implement in the future.");
+}
+
 static void validateVersion() {
     const char* version = (const char*) glGetString(GL_VERSION);
+    printf("%s\n", version);
     int major, minor;
     sscanf(version, "%d.%d", &major, &minor);
     if (major * 10 + minor < 43) {
@@ -22,9 +27,10 @@ static void validateVersion() {
         closeWindow();
         exit(EXIT_FAILURE);
     }
-}
 
-static void enableCuda() {
+    if (strstr(version, "NVIDIA") != NULL) {
+        enableCuda();
+    }
 
 }
 
@@ -51,9 +57,4 @@ void graphicsManager() {
     windowLoop();
     closeWindow();
     glfwTerminate();
-}
-
-int main() {
-    graphicsManager();
-    return 0;
 }

@@ -1,6 +1,7 @@
 #include "vdp2.h"
 
 GLFWwindow* window = NULL;
+bool colorChanged = false;
 
 void createWindow(GLint width, GLint height) {
     window = glfwCreateWindow(width, height, "Test Screen (Temporary)", NULL, NULL);
@@ -17,14 +18,33 @@ static void framebuffer_size_callback(GLFWwindow* windowCopy, int width, int hei
     glViewport(0, 0, width, height);
 }
 
+static void testInput() {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, 1);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+        glClearColor(0.65f, 0.65f, 0.7f, 0.75f);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+        glClearColor(0.67f, 0.9f, 0.75f, 0.6f);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        glClearColor(0.4f, 0.25f, 0.8f, 0.75f);
+    }
+
+    colorChanged = true;
+}
+
 void windowLoop() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     while (!glfwWindowShouldClose(window)) {
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(window, 1);
-        }
 
-        glClearColor(0.4f, 0.25f, 0.8f, 0.75f);
+        if (!colorChanged)
+            glClearColor(0.4f, 0.25f, 0.8f, 0.75f);
+        testInput();
         glClear(GL_COLOR_BUFFER_BIT);
 
         glfwSwapBuffers(window);
