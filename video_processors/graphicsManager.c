@@ -1,5 +1,6 @@
 #include "vdp1.h"
 #include "vdp2.h"
+#include "graphicManager.h"
 #include <string.h>
 
 GLuint VAO, VBO, EBO;
@@ -12,15 +13,16 @@ static void setupWindowHints() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-static void enableCuda() {
-    printf("This might be something I implement in the future.");
+static void* enableCuda() {
+    return NULL;
 }
 
-static void validateVersion() {
-    const char* version = (const char*) glGetString(GL_VERSION);
-    printf("%s\n", version);
+static int versionNumber(const char* versionInfo) {
+    // const char* version = (const char*) glGetString(GL_VERSION);
+    // printf("%s\n", version);
     int major, minor;
-    sscanf(version, "%d.%d", &major, &minor);
+    sscanf(versionInfo, "%d.%d", &major, &minor);
+    /*
     if (major * 10 + minor < 43) {
         printf("The opengl version is not at least 4.3. Please install a newer version of opengl.");
         glfwTerminate();
@@ -31,30 +33,45 @@ static void validateVersion() {
     if (strstr(version, "NVIDIA") != NULL) {
         enableCuda();
     }
-
+     */
+    return major * 10 + minor;
 }
 
 char* getGraphicsROM() {
     return NULL;
 }
 
-void graphicsManager() {
+int graphicsManager() {
     if (glfwInit() == GLFW_FALSE) {
         printf("An error occurred preventing GLFW from working.");
-        exit(EXIT_FAILURE);
+        return FAILURE;
     }
 
     setupWindowHints();
-    createWindow(800, 600);
+    GLFWwindow* window = createWindow(800, 600);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         printf("Failed to initialize GLAD.");
-        closeWindow();
-        exit(EXIT_FAILURE);
+        closeWindow(window);
+        return FAILURE;
     }
     glViewport(0, 0, 800, 600);
-    validateVersion();
-    windowLoop();
-    closeWindow();
+    const char* versionStr = (const char*) glGetString(GL_VERSION);
+    if (versionNumber(versionStr) < 43) {
+        printf("The version of Opengl is below 4.3. Please install a newer version.");
+        return FAILURE;
+    }
+    // validateVersion();
+    windowLoop(window);
+    closeWindow(window);
     glfwTerminate();
+
+    VDP1* test = initVDP1();
+    if (test != NULL) {
+        printf("Successfully created vdp1\n");
+        freeVDP1(test);
+        printf("Freed memory");
+    }
+
+    return SUCCESS;
 }

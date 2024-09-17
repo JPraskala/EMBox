@@ -2,19 +2,26 @@
 // static volatile MemoryMap mMap = {0x000000, 0x080000, 0x0C0000, 0x100000, 0x180000};
 // static volatile SystemRegisters systemRegisters = {0x100000, 0x100002, 0x100004, 0x100008, 0x10000A, 0x10000C, 0x100000, 0x100006, 0x100010, 0x100012, 0x100014, 0x100016};
 // static volatile AdditionalRegisters additionalRegisters = {0x1E, 0x20, 0x8, 0x0};
-#define MAXSIZE 1024
-bool memoryInitialized = false;
 
 VDP1* initVDP1() {
     VDP1* vdp1 = (VDP1*) malloc(sizeof(VDP1));
     if (vdp1 == NULL) {
         printf("Failed to create the vdp1 struct.");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
-    initMemory(vdp1);
-    return vdp1;
+
+    vdp1->mMap = (MemoryMap*) initMemory(sizeof(MemoryMap));
+    vdp1->systemRegisters = (SystemRegisters*) initMemory(sizeof(SystemRegisters));
+    vdp1->additionalRegisters = (AdditionalRegisters*) initMemory(sizeof(AdditionalRegisters));
+    return vdp1->mMap == NULL || vdp1->systemRegisters == NULL || vdp1->additionalRegisters == NULL ? NULL : vdp1;
 }
 
+
+static void* initMemory(size_t size) {
+    return malloc(size);
+}
+
+/*
 static void initMemory(VDP1* vdp1) {
     if (memoryInitialized) {
         return;
@@ -62,14 +69,16 @@ static void initMemory(VDP1* vdp1) {
     vdp1->systemRegisters->MODR = 0x100016;
     memoryInitialized = true;
 }
+ */
 
 void freeVDP1(VDP1* vdp1) {
-    memoryInitialized = false;
+    /*
     free(vdp1->mMap->FRAMEBUFFER);
     free(vdp1->mMap->ACCESSPROHIBITED);
     free(vdp1->mMap->RESERVED);
     free(vdp1->mMap->SYSTEMREGISTERS);
     free(vdp1->mMap->VRAM);
+    */
 
     free(vdp1->mMap);
     free(vdp1->systemRegisters);

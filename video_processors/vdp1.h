@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define MAXSIZE 1024
 
 
 typedef uint32_t LongWord;
@@ -14,11 +15,11 @@ typedef int16_t SWord;
 typedef uint8_t Byte;
 
 typedef struct {
-    LongWord* VRAM;
-    LongWord* FRAMEBUFFER;
-    LongWord* RESERVED;
-    LongWord* SYSTEMREGISTERS;
-    LongWord* ACCESSPROHIBITED;
+    LongWord VRAM[MAXSIZE];
+    LongWord FRAMEBUFFER[MAXSIZE];
+    LongWord RESERVED[MAXSIZE];
+    LongWord SYSTEMREGISTERS[MAXSIZE];
+    LongWord ACCESSPROHIBITED[MAXSIZE];
 } MemoryMap;
 
 typedef struct {
@@ -75,8 +76,9 @@ typedef enum {MODE0, MODE1, MODE2, MODE3, MODE4, MODE5} ColorModes;
 typedef enum {REPLACE, SHADOW, HALF_LUMINANCE, HALF_TRANSPARENCY, GOURAUD_SHADING} ColorCalculations; // Note Gouraud can use both half luminance and half transparency, this needs to be accounted for when working with colors.
 
 VDP1* initVDP1();
-static void initMemory(VDP1* vdp1);
+//static void initMemory(VDP1* vdp1);
 // static void initSystemRegisters(SystemRegisters* systemRegisters);
+static void* initMemory(size_t size);
 void drawSprite(SpriteMode mode, ColorModes colorMode, ColorCalculations colorCalculations, VDP1* vdp1);
 void systemClipping(VDP1* vdp1);
 void userClipping(VDP1* vdp1);
