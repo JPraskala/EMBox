@@ -25,6 +25,7 @@ add_executable(EMBox
         video_processors/vdp2.c
         video_processors/vdp2.h
         video_processors/graphicsManager.c
+        video_processors/graphicManager.h
 )
 
 # Link libraries

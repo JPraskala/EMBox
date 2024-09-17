@@ -1,8 +1,8 @@
 #include <stdio.h>
+#include "./video_processors/graphicManager.h"
 
-/*
+
 int main(void) {
-    printf("Hello, World!\n");
+    graphicsManager();
     return 0;
 }
-*/
